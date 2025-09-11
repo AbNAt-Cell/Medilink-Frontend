@@ -25,6 +25,7 @@ const DoctorHeader = () => {
 
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
   const handleItemClick = async (notification: any) => {
     if (notification.link) {
@@ -46,6 +47,7 @@ const DoctorHeader = () => {
   const logout = () => {
     Cookies.remove("token");
     Cookies.remove("user");
+    router.push("/");
   };
 
   // const isActive = (path: string) => pathname === path
