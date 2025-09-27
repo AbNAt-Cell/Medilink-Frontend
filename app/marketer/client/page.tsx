@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import SignatureCanvas from "react-signature-canvas";
 import { newForm } from "@/hooks/form";
-import { clientAppointments, createDoctorAppointment, editClientAppointmentAsDoctor } from "@/hooks/appointments";
+import { marketerClientAppointments, createMarketerAppointment, editClientAppointmentAsMarketer } from "@/hooks/appointments";
 import { formatPreferredDate } from "@/utils/generalUtils";
 
 type ClientStatus = "Submitted" | "Pending" | "Review";
@@ -30,7 +30,7 @@ interface Diagnosis {
   assessment?: string;
 }
 
-export default function DoctorClientsList() {
+export default function MarketerClientsList() {
   const [searchTerm, setSearchTerm] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [startDate, setStartDate] = useState("");
@@ -53,7 +53,7 @@ export default function DoctorClientsList() {
   useEffect(() => {
     const getClientAppointments = async () => {
       try {
-        const response = await clientAppointments();
+        const response = await marketerClientAppointments();
         setDiagnoses(response);
       } catch (error) {
         console.log("error getting users", error);
@@ -110,7 +110,7 @@ export default function DoctorClientsList() {
 
     try {
       console.log("Confirming appointment with full payload:", payload);
-      await editClientAppointmentAsDoctor(payload);
+      await editClientAppointmentAsMarketer(payload);
       setOpen(false);
     } catch (error) {
       console.error("Error updating appointment:", error);
@@ -142,7 +142,7 @@ export default function DoctorClientsList() {
         address: form?.address,
       };
 
-      const response = await createDoctorAppointment(payload);
+      const response = await createMarketerAppointment(payload);
 
       // optionally close modal
       setOpen(false);
