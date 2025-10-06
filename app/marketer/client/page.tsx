@@ -16,7 +16,7 @@ import { newForm } from "@/hooks/form";
 import { marketerClientAppointments, createMarketerAppointment, editClientAppointmentAsMarketer, deleteClientAppointment } from "@/hooks/appointments";
 import Cookies from "js-cookie";
 
-type ClientStatus = "completed" | "scheduled" | "accepted";
+type ClientStatus = "submitted" | "pending" | "review";
 
 interface Diagnosis {
   id: string;
@@ -87,7 +87,8 @@ export default function MarketerClientsList() {
 
   const [selected, setSelected] = useState<any>(null);
   const [assessment, setAssessment] = useState("");
-  const [statusSel, setStatusSel] = useState("scheduled");
+  const [statusSel, setStatusSel] = useState("pending");
+  const [error, setError] = useState("");
   const sigRef = useRef<SignatureCanvas | null>(null);
 
   const handleRowClick = (d: any) => {
@@ -140,7 +141,7 @@ export default function MarketerClientsList() {
     }
   };
 
-  const canEdit = selected && (selected?.status === "scheduled" || selected?.status === "review");
+  const canEdit = selected && (selected?.status === "pending" || selected?.status === "review");
 
   function handleAddAppointment() {
     setFormMode("create");
@@ -149,7 +150,11 @@ export default function MarketerClientsList() {
   }
 
   const handleSignatureSave = async () => {
-    if (!sigRef.current) return;
+    setError("");
+    if (!sigRef.current || sigRef.current.isEmpty()) {
+      setError("Signature is required before submission.");
+      return;
+    }
 
     // Convert base64 signature to blob
     const dataUrl = sigRef.current.toDataURL("image/png");
@@ -290,7 +295,7 @@ export default function MarketerClientsList() {
                         <TableCell className="text-xs sm:text-sm">{diagnosis?.date}</TableCell>
                         <TableCell className="text-xs sm:text-sm">{diagnosis?.client?.name}</TableCell>
                         <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${diagnosis?.status === "accepted" ? "bg-green-100 text-green-800" : diagnosis?.status === "scheduled" ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800"}`}>{diagnosis?.status}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${diagnosis?.status === "review" ? "bg-green-100 text-green-800" : diagnosis?.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800"}`}>{diagnosis?.status}</span>
                         </TableCell>
                         <TableCell>
                           <Button
@@ -326,7 +331,7 @@ export default function MarketerClientsList() {
                   <b>Client:</b> {selected?.client?.name}
                 </p>
                 <p className="text-sm sm:text-base">
-                  <b>Sex:</b> {selected?.sex ?? "—"}
+                  <b>Sex:</b> {selected?.client?.sex ?? "—"}
                 </p>
                 <p className="text-sm sm:text-base">
                   <b>Date:</b> {selected?.date}
@@ -345,58 +350,6 @@ export default function MarketerClientsList() {
                     <p className="text-sm sm:text-base">
                       <b>Status:</b> {selected?.status}
                     </p>
-                  </>
-                )}
-
-                {canEdit && (
-                  <>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 pt-2">
-                      {/* <div className="lg:col-span-2">
-                        <Label className="mb-1 block text-xs sm:text-sm">Assessment Summary</Label>
-                        <Textarea value={assessment} onChange={(e) => setAssessment(e.target.value)} placeholder="Write your assessment..." className="min-h-24 sm:min-h-28 text-sm sm:text-base" />
-                      </div>
-
-                      <div>
-                        <Label className="mb-1 block text-xs sm:text-sm">Status</Label>
-                        <Select defaultValue={selected?.status || ""} value={statusSel} onValueChange={(v) => setStatusSel(v as ClientStatus)}>
-                          <SelectTrigger className="text-sm sm:text-base text-black">
-                            <SelectValue className="text-black" placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white shadow-md border rounded-md">
-                            <SelectItem value="Pending">Pending</SelectItem>
-                            <SelectItem value="completed">Submitted</SelectItem>
-                            <SelectItem value="accepted">Review</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div> */}
-
-                      <div className="lg:col-span-2">
-                        <Label className="mb-1 block text-xs sm:text-sm">Marketer Signature</Label>
-                        <div className="border rounded-md p-2 bg-white">
-                          <SignatureCanvas
-                            ref={sigRef}
-                            penColor="black"
-                            canvasProps={{
-                              width: 500,
-                              height: 160,
-                              className: "border w-full h-[120px] sm:h-[160px]",
-                            }}
-                            backgroundColor="white"
-                          />
-                        </div>
-                        <div className="flex justify-between mt-2">
-                          <Button type="button" variant="outline" size="sm" onClick={() => sigRef.current?.clear()} className="text-xs sm:text-sm">
-                            Clear
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <Button onClick={handleConfirm} className="w-full text-sm sm:text-base bg-secondary cursor-pointer">
-                        Confirm
-                      </Button>
-                    </div>
                   </>
                 )}
               </div>
@@ -444,25 +397,6 @@ export default function MarketerClientsList() {
                   <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                 </div>
 
-                {/* <div>
-                  <Label className="text-xs sm:text-sm">Assessment Summary</Label>
-                  <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Write your assessment..." />
-                </div>
-
-                <div>
-                  <Label className="text-xs sm:text-sm">Status</Label>
-                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as ClientStatus })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pending">Pending</SelectItem>
-                      <SelectItem value="completed">Submitted</SelectItem>
-                      <SelectItem value="accepted">Review</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div> */}
-
                 <div>
                   <Label className="text-xs sm:text-sm">Marketer Signature</Label>
                   <div className="border rounded-md p-2 bg-white">
@@ -477,6 +411,7 @@ export default function MarketerClientsList() {
                       backgroundColor="white"
                       onEnd={() => setForm({ ...form, signature: sigRef.current?.toDataURL() })}
                     />
+                    {error && <span className="text-red-500 text-xs">{error}</span>}
                   </div>
                   <div className="flex justify-between mt-2">
                     <Button
