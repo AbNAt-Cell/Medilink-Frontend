@@ -1,8 +1,8 @@
 "use client";
 
-import { activeMessages, contactMessage, contactMessageHistory, fetchPeerId, messageContacts, sendMessage, storePeerId } from "@/hooks/messages";
+import { activeMessages, contactMessage, contactMessageHistory, fetchPeerId, messageContacts, sendMessage, storePeerId, deleteMessage } from "@/hooks/messages";
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Phone, Video, Smile, Paperclip, Send, Check, CheckCheck, PhoneMissed, ListFilter, Camera, Mic, MessageSquareDot, Pen, Users, FileText, ImagePlay, Plus, PhoneOff, VideoOff, MicOff, X, ArrowLeft, SquarePen, PhoneOffIcon } from "lucide-react";
+import { Search, Phone, Video, Smile, Paperclip, Send, Check, CheckCheck, PhoneMissed, ListFilter, Camera, Mic, MessageSquareDot, Pen, Users, FileText, ImagePlay, Plus, PhoneOff, VideoOff, MicOff, X, ArrowLeft, SquarePen, PhoneOffIcon, Trash } from "lucide-react";
 import ContactModal from "@/components/ContactModal";
 import Peer, { MediaConnection } from "peerjs";
 import Cookies from "js-cookie";
@@ -67,7 +67,8 @@ export default function ChatDashboard() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { selectedContact, setSelectedContact, sending, setSending, loggedInUser, messages, setMessages, conversationId, setConversationId, recipientPeerId, setRecipientPeerId, startAudioCall, startVideoCall } = usePeerContext();
-
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -443,13 +444,22 @@ export default function ChatDashboard() {
 
   const handleDeleteMessage = async (id: string) => {
     try {
-      await fetch(`/api/messages/${id}`, { method: "DELETE" });
+      await deleteMessage(id);
       setMessages((prev: any) => prev.filter((m: any) => m._id !== id));
-      alert("Message deleted successfully.");
     } catch (error) {
       console.error("Error deleting message:", error);
-      alert("Failed to delete message.");
     }
+  };
+
+  const openDeleteModal = (id: string) => {
+    setMessageToDelete(id);
+    setShowDeleteModal(true);
+    setShowMenu(false);
+  };
+
+  const confirmDelete = () => {
+    if (messageToDelete) handleDeleteMessage(messageToDelete);
+    setShowDeleteModal(false);
   };
 
   return (
@@ -599,7 +609,7 @@ export default function ChatDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message?.sent || message?.sender?._id === loggedInUser?.id ? "bg-secondary text-white" : "bg-white text-gray-900 shadow-sm"}`}>
+                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message?.sent || message?.sender?._id === loggedInUser?.id ? "bg-secondary text-white" : "bg-white text-gray-900 shadow-sm"} grid`}>
                     <div className="flex">
                       {message?.sender?._id === loggedInUser?.id && (
                         <div className="ms-auto">
@@ -609,14 +619,9 @@ export default function ChatDashboard() {
 
                           {showMenu === message._id && (
                             <div className="absolute right-0 mt-1 w-auto bg-white border rounded shadow-md z-50">
-                              <button
-                                onClick={() => {
-                                  const confirmed = confirm("⚠️ This message will be permanently deleted. Continue?");
-                                  if (confirmed) handleDeleteMessage(message._id);
-                                  setShowMenu(false);
-                                }}
-                                className="block w-full text-left text-sm text-red-600 hover:bg-gray-100 px-3 py-2 cursor-pointer">
-                                Delete message
+                              <button onClick={() => openDeleteModal(message._id)} className="block w-full text-left text-sm text-red-600 hover:bg-gray-100 px-3 py-2 flex items-center gap-2 cursor-pointer">
+                                <Trash size={20} />
+                                Delete
                               </button>
                             </div>
                           )}
@@ -819,6 +824,23 @@ export default function ChatDashboard() {
       {/* Hidden file inputs */}
       <input ref={fileInputRef} type="file" accept="*/*" multiple onChange={handleFileSelect} className="hidden" />
       <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" onChange={handleCameraCapture} className="hidden" />
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-md max-w-sm w-full">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Delete Message</h2>
+            <p className="text-sm text-gray-600 mb-4">This message will be permanently deleted. Do you want to continue?</p>
+            <div className="flex justify-end space-x-3">
+              <button onClick={() => setShowDeleteModal(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm">
+                Cancel
+              </button>
+              <button onClick={confirmDelete} className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
